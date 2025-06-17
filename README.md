@@ -1,4 +1,3 @@
-````markdown
 # Dojo Game Contract
 
 This project implements a 3D world game on Starknet using Dojo, with players, spaceships, planets, and procedurally generated collectables.
@@ -50,5 +49,4 @@ katana
 * Procedural collectable generation per area
 * Inventory and item pickup
 
-```
 
