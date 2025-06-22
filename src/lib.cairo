@@ -1,3 +1,3 @@
-mod components;
-mod models;
-mod GameActions;
+pub mod models;
+pub mod world;
+pub mod GameActions;

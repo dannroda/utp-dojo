@@ -1,10 +1,20 @@
 [package]
-name = "utp-dojo"
+cairo-version = "=2.10.1"
+name = "utp_dojo"
 version = "0.1.0"
-cairo-version = "2.4.0"
+
+[cairo]
+sierra-replace-ids = true
 
 [dependencies]
-dojo = { git = "https://github.com/dojoengine/dojo", tag = "v0.4.0" }
+dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.0" }
 
-[[target.dojo]]
-lib = "src/lib.cairo"
+[dev-dependencies]
+cairo_test = "=2.10.1"
+dojo_cairo_test = { git = "https://github.com/dojoengine/dojo", tag = "v1.5.0" }
+
+#[[target.dojo]]
+#lib = "src/lib.cairo"
+
+[[target.starknet-contract]]
+build-external-contracts = ["dojo::world::world_contract::world"]

@@ -1,31 +1,21 @@
-use super::models::{Player, CollectableTracker};
+use crate::models::{Player, CollectableTracker, Vec3, InventoryItem};
 use dojo::world::world;
+use starknet::get_block_timestamp;
 
-pub fn add_to_inventory(player_id: u128, item_type: u16) {
-    let mut player = world::get_model::<Player>(player_id);
-    let current = player.inventory.get(item_type).unwrap_or(0_u64);
-    player.inventory.insert(item_type, current + 1);
-    world::set_model::<Player>(player_id, player);
-}
-
-pub fn get_collectable_bitfield(area: felt252, collectable_type: u16) -> felt252 {
-    let id = compute_tracker_id(area, collectable_type);
-    match world::get_model::<CollectableTracker>(id) {
-        Some(entry) => entry.bitfield,
-        None => 0,
-    }
-}
-
-pub fn set_collectable_bitfield(area: felt252, collectable_type: u16, bitfield: felt252) {
-    let id = compute_tracker_id(area, collectable_type);
-    let entry = CollectableTracker {
-        area,
-        collectable_type,
-        bitfield,
+pub fn current_pos(pos: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
+    let current_time_u64 = get_block_timestamp();
+    let current_time: u128 = current_time_u64.into();
+    let time_delta = current_time - last_move;
+    
+    // Calculate the distance to move based on time_delta and speed
+    let distance_u128 = time_delta * speed;
+    let distance: i128 = distance_u128.try_into().unwrap();
+    
+    // Calculate the new position by adding the direction vector multiplied by the distance
+    // Since dir is normalized, this gives us the correct direction of movement
+    return Vec3 {
+        x: pos.x + dir.x * distance,
+        y: pos.y + dir.y * distance,
+        z: pos.z + dir.z * distance,
     };
-    world::set_model::<CollectableTracker>(id, entry);
-}
-
-fn compute_tracker_id(area: felt252, collectable_type: u16) -> u128 {
-    (area as u128) * 1000 + collectable_type as u128
 }
