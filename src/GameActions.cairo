@@ -15,23 +15,25 @@ pub trait IGameActions<T> {
 #[dojo::contract]
 pub mod GameActions {
 
-use super::{IGameActions};
-use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
-use crate::world::{current_pos};
-// We'll implement our own bitwise operations
-use array::ArrayTrait;
-use core::byte_array::ByteArray;
-use starknet::get_block_timestamp;
-use starknet::{ContractAddress, get_caller_address};
+    use super::{IGameActions};
+    use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
+    use crate::world::{current_pos};
+    // We'll implement our own bitwise operations
+    use array::ArrayTrait;
+    use core::byte_array::ByteArray;
+    use starknet::get_block_timestamp;
+    use starknet::{ContractAddress, get_caller_address};
 
-use dojo::model::{ModelStorage};
-use dojo::event::EventStorage;
+    use dojo::model::{ModelStorage};
+    use dojo::event::EventStorage;
+    use core::traits::BitAnd;
+    use core::num::traits::Pow;
 
     const DEFAULT_REFERENCE_BODY_ID: u128 = 0;
     const MAX_SPAWN_DISTANCE_SQUARED: i128 = 10000;
-    const AREA_SIZE: u128 = 1000;
-    const MAX_SPAWN: u8 = 252;
-    const FP_UNIT: u128 = 0x10000000000; // 2^40
+    const AREA_SIZE: i128 = 1000;
+    const MAX_SPAWN: u8 = 128;
+    const FP_UNIT: i128 = 0x10000000000; // 2^40
 
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
@@ -257,7 +259,7 @@ use dojo::event::EventStorage;
             count_seed.append_byte(planet.seed.try_into().unwrap());
             count_seed.append_byte(planet.epoc.try_into().unwrap());
             count_seed.append_byte(area_hash.try_into().unwrap());
-            count_seed.append_byte(collectable_type.into());
+            count_seed.append_byte(collectable_type.try_into().unwrap());
             //let count_seed = planet.seed + planet.epoc + area_hash + collectable_type.into();
             let count_hash = core::sha256::compute_sha256_byte_array(@count_seed);
             let total_spawned = *count_hash.span().at(7) % MAX_SPAWN.into();
@@ -270,14 +272,19 @@ use dojo::event::EventStorage;
             let item_hash = core::sha256::compute_sha256_byte_array(@pos_seed);
 
             let span = item_hash.span();
-            let offset_x = (*span.at(0).into() * FP_UNIT / 0xFFFFFFFF_u128) * AREA_SIZE.into();
-            let offset_y = (*span.at(1).into() * FP_UNIT / 0xFFFFFFFF_u128) * AREA_SIZE.into();
-            let offset_z = (*span.at(2).into() * FP_UNIT / 0xFFFFFFFF_u128) * AREA_SIZE.into();
+            // Convert u32 to i128 using try_into().unwrap()
+            let span_0_i128: i128 = (*span.at(0)).try_into().unwrap();
+            let span_1_i128: i128 = (*span.at(1)).try_into().unwrap();
+            let span_2_i128: i128 = (*span.at(2)).try_into().unwrap();
+            
+            let offset_x = (span_0_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let offset_y = (span_1_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
+            let offset_z = (span_2_i128 * FP_UNIT / 0xFFFFFFFF_i128) * AREA_SIZE;
 
             let item_pos = Vec3 {
-                x: area_x * FP_UNIT.into() + offset_x.into(),
-                y: area_y * FP_UNIT.into() + offset_y.into(),
-                z: area_z * FP_UNIT.into() + offset_z.into(),
+                x: area_x * FP_UNIT + offset_x,
+                y: area_y * FP_UNIT + offset_y,
+                z: area_z * FP_UNIT + offset_z,
             };
 
             let dx = item_pos.x - player_pos.x;
@@ -286,7 +293,7 @@ use dojo::event::EventStorage;
             let distance_squared = dx * dx + dy * dy + dz * dz;
             assert(distance_squared <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
-            let area_key: u128 = area_hash.into() * 1000_u128 + collectable_type.into();
+            let area_key: i128 = area_hash * 1000_i128 + collectable_type.into();
             
             // Get existing tracker or create a new one
             let mut tracker : CollectableTracker = world.read_model(area_key);
@@ -302,19 +309,8 @@ use dojo::event::EventStorage;
             //};
             
             let bitfield = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
-            // Calculate bit mask using manual exponentiation instead of bit shifting
-            // 1 << n is equivalent to 2^n
-            let mut bit_mask = 1;
-            let mut i = 0;
-            loop {
-                if i >= collectable_index {
-                    break;
-                }
-                bit_mask = bit_mask * 2;
-                i += 1;
-            };
+            let mut bit_mask : u128 = 2_u128.pow(collectable_index.into());
 
-            // Bitwise AND implementation
             let is_already_collected = (bitfield & bit_mask) != 0;
             assert(!is_already_collected, 'AlreadyCollected');
 

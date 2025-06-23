@@ -74,7 +74,7 @@ pub struct CollectableTracker {
     pub id: u128,
     pub area: felt252,
     pub collectable_type: u16,
-    pub bitfield: felt252,
+    pub bitfield: u128,
     pub epoc: felt252,
 }
 
