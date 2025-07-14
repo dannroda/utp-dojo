@@ -1,6 +1,10 @@
 use crate::models::{Player, CollectableTracker, Vec3, InventoryItem};
 use dojo::world::world;
 use starknet::get_block_timestamp;
+use core::num::traits::Pow;
+
+const FP_UNIT: i128 = 0x10000000000; // 2^40
+const FP_UNIT_BITS: u8 = 40;
 
 pub fn current_pos(pos: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
     let current_time_u64 = get_block_timestamp();
@@ -18,4 +22,29 @@ pub fn current_pos(pos: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
         y: pos.y + dir.y * distance,
         z: pos.z + dir.z * distance,
     };
+}
+
+pub fn fp40_mul(a: i128, b: i128) -> i128 {
+
+    let mut ret = a * b;
+    ret = ret / 2_i128.pow(FP_UNIT_BITS.into());
+
+    return ret;
+}
+
+pub fn vec3_fp40_dist_sq(v1: Vec3, v2: Vec3) -> i128 {
+
+    let dx = v1.x - v2.x;
+    let dy = v1.y - v2.y;
+    let dz = v1.z - v2.z;
+    let distance_squared = fp40_mul(dx, dx) + fp40_mul(dy, dy) + fp40_mul(dz, dz);
+
+    return distance_squared;
+}
+
+pub fn vec3_fp40_len_sq(vec: Vec3) -> i128 {
+
+    let distance_squared = fp40_mul(vec.x, vec.x) + fp40_mul(vec.y, vec.y) + fp40_mul(vec.z, vec.z);
+
+    return distance_squared;
 }
