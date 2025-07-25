@@ -2,6 +2,7 @@ use crate::models::{Player, CollectableTracker, Vec3, InventoryItem};
 use dojo::world::world;
 use starknet::get_block_timestamp;
 use core::num::traits::Pow;
+use core::num::traits::Sqrt;
 
 const FP_UNIT: i128 = 0x10000000000; // 2^40
 const FP_UNIT_BITS: u8 = 40;
@@ -32,6 +33,15 @@ pub fn fp40_mul(a: i128, b: i128) -> i128 {
     return ret;
 }
 
+pub fn fp40_div(a: i128, b: i128) -> i128 {
+
+    // will only work for certain ranges
+    let mut a_shift = a * 2_i128.pow(FP_UNIT_BITS.into());
+    let ret: i128 = a_shift / b;
+
+    return ret;
+}
+
 pub fn vec3_fp40_dist_sq(v1: Vec3, v2: Vec3) -> i128 {
 
     let dx = v1.x - v2.x;
@@ -47,4 +57,11 @@ pub fn vec3_fp40_len_sq(vec: Vec3) -> i128 {
     let distance_squared = fp40_mul(vec.x, vec.x) + fp40_mul(vec.y, vec.y) + fp40_mul(vec.z, vec.z);
 
     return distance_squared;
+}
+
+pub fn vec3_fp40_len(vec: Vec3) -> i128 {
+
+    let d2 : u128 = vec3_fp40_len_sq(vec).try_into().unwrap();
+    let d = d2.sqrt();
+    return d.into();
 }
