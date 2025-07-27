@@ -29,6 +29,7 @@ pub struct PlayerPosition {
     pub player: ContractAddress,
     pub pos: Vec3,
     pub dir: Vec3,
+    pub dest: Vec3,
     pub last_motion: u128,
     pub speed: u64,
 }

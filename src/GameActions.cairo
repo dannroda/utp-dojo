@@ -8,7 +8,7 @@ pub trait IGameActions<T> {
     fn unboard_spaceship(ref self: T, spaceship_id: u128, pos: Vec3);
     fn move_spaceship(ref self: T, spaceship_id: u128, position: Vec3, direction: Vec3, p_speed: u64);
     fn ship_switch_reference_body(ref self: T, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3, speed: u64);
-    fn move_player(ref self: T, position: Vec3, direction: Vec3, p_speed: u64);
+    fn player_move(ref self: T, dst: Vec3);
     fn collect_item(ref self: T, player_id: u128, collectable_type: u16, collectable_index: u8);
 }
 
@@ -18,7 +18,7 @@ pub mod GameActions {
 
     use super::{IGameActions};
     use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
-    use crate::world::{current_pos, vec3_fp40_dist_sq, vec3_fp40_len_sq, FP_UNIT, FP_UNIT_BITS};
+    use crate::world::{current_pos, vec3_fp40_dist_sq, vec3_fp40_len_sq, vec3_sub, vec3_fp40_len, vec3_fp40_div_scalar, FP_UNIT, FP_UNIT_BITS};
     // We'll implement our own bitwise operations
     use array::ArrayTrait;
     use core::byte_array::ByteArray;
@@ -218,39 +218,31 @@ pub mod GameActions {
             world.write_model(@ship_pos);
         }
 
-        fn move_player(ref self: ContractState, position: Vec3, direction: Vec3, p_speed: u64) {
-            
-            assert(p_speed.into() <= FP_UNIT, 'Speed too large (must under 1)');
+        fn player_move(ref self: ContractState, dst: Vec3) {
 
             let mut world = self.world_default();
             let player_id = get_caller_address();
 
             let player : Player = world.read_model(player_id);
             assert((player.status_flags & 1) != 0, 'Player is not walking');
-            
-            // Check that the direction vector is normalized
-            // Using fixed point arithmetic with a small epsilon for floating point comparison
-            let len2 = vec3_fp40_len_sq(direction);
-            assert(len2 >= FP_UNIT - FP_LEN_SQ_EPSION && len2 <= FP_UNIT + FP_LEN_SQ_EPSION, 'Direction not normalized');
 
             // Get current position from model
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            if (player_pos_model.speed > 0) {
+            let model_pos = current_pos(player_pos_model.pos, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
-                let model_pos = current_pos(player_pos_model.pos, direction, player_pos_model.last_motion, (player_pos_model.speed * PLAYER_WALKING_SPEED.try_into().unwrap()).into());
-            
-                // Check that the provided position doesn't differ too much from the current position
-                let distance_squared = vec3_fp40_dist_sq(position, model_pos);
-                assert(distance_squared <= MAX_PLAYER_WALK_EPSILON2, 'Position change too large');
-            };
-            
+            // calculate new dir
+            let dif : Vec3 = vec3_sub(dst, model_pos);
+            let len = vec3_fp40_len(dif);
+            let dir = vec3_fp40_div_scalar(dif, len);
+
             // Update player position model
             let new_player_pos = PlayerPosition {
                 player: player_id,
-                pos: position,
-                dir: direction,
+                pos: model_pos,
+                dir: dir,
+                dest: dst,
                 last_motion: get_block_timestamp().into(),
-                speed: p_speed,
+                speed: 0,
             };
             world.write_model(@new_player_pos);
         }

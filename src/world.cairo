@@ -33,11 +33,35 @@ pub fn fp40_mul(a: i128, b: i128) -> i128 {
     return ret;
 }
 
+pub fn abs_value(v: i128) -> u128 {
+    if (v < 0) { return (v * -1).try_into().unwrap(); };
+
+    return v.try_into().unwrap();
+}
+
 pub fn fp40_div(a: i128, b: i128) -> i128 {
 
-    // will only work for certain ranges
-    let mut a_shift = a * 2_i128.pow(FP_UNIT_BITS.into());
-    let ret: i128 = a_shift / b;
+    let a_abs256 = abs_value(a) * 2_u128.pow(FP_UNIT_BITS.into());
+    let b_abs = abs_value(b);
+
+    let abs_ret = a_abs256 / b_abs;
+    let ret : i128 = abs_ret.try_into().unwrap();
+
+    if ( (a < 0) != (b < 0) ) {
+        return ret * -1;
+    };
+
+    return ret;
+}
+
+pub fn vec3_fp40_div_scalar(v1: Vec3, s: i128) -> Vec3 {
+
+    let ret = Vec3 {
+
+        x: fp40_div(v1.x, s),
+        y: fp40_div(v1.y, s),
+        z: fp40_div(v1.z, s),
+    };
 
     return ret;
 }
@@ -64,4 +88,14 @@ pub fn vec3_fp40_len(vec: Vec3) -> i128 {
     let d2 : u128 = vec3_fp40_len_sq(vec).try_into().unwrap();
     let d = d2.sqrt();
     return d.into();
+}
+
+pub fn vec3_sub(v1: Vec3, v2: Vec3) -> Vec3 {
+
+    return Vec3 {
+
+        x: v1.x - v2.x,
+        y: v1.y - v2.y,
+        z: v1.z - v2.z,
+    };
 }
