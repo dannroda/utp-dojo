@@ -7,7 +7,7 @@ use core::num::traits::Sqrt;
 const FP_UNIT: i128 = 0x10000000000; // 2^40
 const FP_UNIT_BITS: u8 = 40;
 
-pub fn current_pos(pos: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
+pub fn current_pos(pos: Vec3, dest: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
     let current_time_u64 = get_block_timestamp();
     let current_time: u128 = current_time_u64.into();
     let time_delta = current_time - last_move;
@@ -15,7 +15,14 @@ pub fn current_pos(pos: Vec3, dir: Vec3, last_move: u128, speed: u128) -> Vec3 {
     // Calculate the distance to move based on time_delta and speed
     let distance_u128 = time_delta * speed;
     let distance: i128 = distance_u128.try_into().unwrap();
-    
+
+    let distance_to_dest_sq = vec3_fp40_dist_sq(pos, dest);
+
+    // if distance to destination is less than distance to travel based on time, return destination
+    if (distance_to_dest_sq >= (distance * distance)) {
+        return dest;
+    };
+
     // Calculate the new position by adding the direction vector multiplied by the distance
     // Since dir is normalized, this gives us the correct direction of movement
     return Vec3 {

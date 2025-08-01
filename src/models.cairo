@@ -31,7 +31,6 @@ pub struct PlayerPosition {
     pub dir: Vec3,
     pub dest: Vec3,
     pub last_motion: u128,
-    pub speed: u64,
 }
 
 
@@ -44,8 +43,7 @@ pub struct Spaceship {
     pub owner: ContractAddress,
     pub capacity: u32,
     pub reference_body: u128,
-    pub speed: u64,
-    pub status_flags: u8, // 1: spawned, 2: landed, 4: opccupied, 8: hyperspeed
+    pub status_flags: u8, // 1: spawned, 2: landed, 4: opccupied
 }
 
 #[derive(Copy, Drop, Serde, Debug)]
@@ -55,8 +53,9 @@ pub struct ShipPosition {
     pub ship: u128,
     pub pos: Vec3,
     pub dir: Vec3,
+    pub dest: Vec3,
+    pub hyperspeed: bool,
     pub last_motion: u128,
-    pub speed : u64,
 }
 
 

@@ -2,14 +2,14 @@ use crate::models::Vec3;
 
 #[starknet::interface]
 pub trait IGameActions<T> {
-    fn spawn_spaceship(ref self: T, spaceship_id: u128, spawn_pos: Vec3);
-    fn despawn_spaceship(ref self: T, spaceship_id: u128);
-    fn board_spaceship(ref self: T, spaceship_id: u128);
-    fn unboard_spaceship(ref self: T, spaceship_id: u128, pos: Vec3);
-    fn move_spaceship(ref self: T, spaceship_id: u128, position: Vec3, direction: Vec3, p_speed: u64);
-    fn ship_switch_reference_body(ref self: T, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3, speed: u64);
+    fn ship_spawn(ref self: T, spaceship_id: u128, spawn_pos: Vec3);
+    fn ship_despawn(ref self: T, spaceship_id: u128);
+    fn ship_board(ref self: T, spaceship_id: u128);
+    fn ship_unboard(ref self: T, spaceship_id: u128, pos: Vec3);
+    fn ship_move(ref self: T, spaceship_id: u128, destination: Vec3, p_hyperspeed: bool);
+    fn ship_switch_reference_body(ref self: T, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3);
     fn player_move(ref self: T, dst: Vec3);
-    fn collect_item(ref self: T, player_id: u128, collectable_type: u16, collectable_index: u8);
+    fn item_collect(ref self: T, player_id: u128, collectable_type: u16, collectable_index: u8);
 }
 
 
@@ -43,164 +43,164 @@ pub mod GameActions {
     const SHIP_SPEED: i128 = 100 * FP_UNIT;
     const SHIP_HYPER_SPEED: i128 = 1000 * FP_UNIT;
 
+    const ShipFlags_Spawned: u8 = 1;
+    const ShipFlags_Landed: u8 = 2;
+    const ShipFlags_Occupied: u8 = 4;
+
+    const PlayerFlags_OnFoot: u8 = 1;
+    const PlayerFlags_OnShip: u8 = 2;
+
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
 
-        fn spawn_spaceship(ref self: ContractState, spaceship_id: u128, spawn_pos: Vec3) {
+        fn ship_spawn(ref self: ContractState, spaceship_id: u128, spawn_pos: Vec3) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let player : Player = world.read_model(player_id);
             let mut ship : Spaceship = world.read_model(spaceship_id);
 
             assert(ship.owner == player_id, 'NotOwner');
-            assert((ship.status_flags & 1) == 0, 'AlreadySpawned');
+            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipNotEmpty');
 
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            let player_pos = player_pos_model.pos;
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
             
             let distance_squared = vec3_fp40_dist_sq(spawn_pos, player_pos);
             assert(distance_squared <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
-            ship.status_flags += 1;
-            if ((ship.status_flags & 2) == 0) {
-                ship.status_flags += 2;
+            if ((ship.status_flags & ShipFlags_Landed) == 0) {
+                ship.status_flags += ShipFlags_Landed;
             };
+            if ((ship.status_flags & ShipFlags_Spawned) == 0) {
+                ship.status_flags += ShipFlags_Spawned;
+            };
+
             ship.reference_body = player.reference_body;
             world.write_model(@ship);
 
             let mut ship_motion : ShipPosition = world.read_model(spaceship_id);
             ship_motion.pos = spawn_pos;
-            ship_motion.speed = 0;
+            ship_motion.dest = spawn_pos;
             ship_motion.dir = player_pos_model.dir;
             ship_motion.last_motion = get_block_timestamp().into();
             world.write_model(@ship_motion);
         }
 
-        fn despawn_spaceship(ref self: ContractState, spaceship_id: u128) {
+        fn ship_despawn(ref self: ContractState, spaceship_id: u128) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(spaceship_id);
             assert(ship.owner == player_id, 'NotOwner');
-            assert((ship.status_flags & 1) != 0, 'AlreadySpawned');
-            assert((ship.status_flags & 4) == 0, 'ShipNotEmpty');
+            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'AlreadyDeSpawned');
+            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipNotEmpty');
 
             // Remove ship position model
             //world.delete_model::<ShipPosition>(spaceship_id);
-            ship.status_flags -= 1;
+            ship.status_flags -= ShipFlags_Spawned;
             world.write_model(@ship);
         }
 
-        fn board_spaceship(ref self: ContractState, spaceship_id: u128) {
+        fn ship_board(ref self: ContractState, spaceship_id: u128) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
             
-            assert((ship.status_flags & 1) != 0, 'ShipNotSpawned');
-            assert((ship.status_flags & 2) != 0, 'ShipNotLanded');
-            assert((ship.status_flags & 4) == 0, 'ShipAlreadyOccupied');
+            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'ShipNotSpawned');
+            //assert((ship.status_flags & ShipFlags_Landed) != 0, 'ShipNotLanded');
+            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipAlreadyOccupied');
 
             let mut player : Player = world.read_model(player_id);
-            assert((player.status_flags & 1) != 0, 'PlayerNotWalking');
-            assert((player.status_flags & 2) == 0, 'PlayerAlreadyOnSpaceship');
+            assert((player.status_flags & PlayerFlags_OnFoot) != 0, 'PlayerNotWalking');
+            assert((player.status_flags & PlayerFlags_OnShip) == 0, 'PlayerAlreadyOnSpaceship');
 
             // check ship position agains player position
             let ship_pos : ShipPosition = world.read_model(spaceship_id);
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
-            let mut player_pos = player_pos_model.pos;
-            if (player_pos_model.speed > 0) {
-
-                let speed : u128 = (player_pos_model.speed.into() * PLAYER_WALKING_SPEED).try_into().unwrap();
-                player_pos = current_pos(player_pos_model.pos, player_pos_model.dir, player_pos_model.last_motion, speed);
-            };
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap()); 
 
             let dist2 = vec3_fp40_dist_sq(player_pos, ship_pos.pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
-            ship.status_flags += 4;
+            ship.status_flags += ShipFlags_Occupied;
             world.write_model(@ship);
 
-            player.status_flags += 1;
+            player.status_flags -= PlayerFlags_OnFoot;
+            player.status_flags += PlayerFlags_OnShip;
             world.write_model(@player);
         }
 
-        fn unboard_spaceship(ref self: ContractState, spaceship_id: u128, pos: Vec3) {
+        fn ship_unboard(ref self: ContractState, spaceship_id: u128, pos: Vec3) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
-            assert((ship.status_flags & 2) != 0, 'ShipNotLanded');
-            assert((ship.status_flags & 4) != 0, 'ShipNotOccupied');
+            //assert((ship.status_flags & ShipFlags_Landed) != 0, 'ShipNotLanded');
+            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'ShipNotOccupied');
             // Get ship position to check last motion time
             let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
-            assert(ship_pos.speed > 0, 'ShipMoving');
+            //assert(ship_pos.speed > 0, 'ShipMoving');
             let dist2 = vec3_fp40_dist_sq(ship_pos.pos, pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
             let mut player : Player = world.read_model(player_id);
-            assert((player.status_flags & 1) == 0, 'PlayerWalking');
-            assert((player.status_flags & 2) != 0, 'PlayerNotOnSpaceship');
+            assert((player.status_flags & PlayerFlags_OnFoot) == 0, 'PlayerWalking');
+            assert((player.status_flags & PlayerFlags_OnShip) != 0, 'PlayerNotOnSpaceship');
 
             let mut player_pos : PlayerPosition = world.read_model(player_id);
             player_pos.pos = pos;
-            player_pos.speed = 0;
+            player_pos.dest = pos;
             world.write_model(@player_pos);
 
-            ship.status_flags -= 4;
+            ship.status_flags -= ShipFlags_Occupied;
             world.write_model(@ship);
 
-            player.status_flags -= 1;
+            player.status_flags -= PlayerFlags_OnShip;
+            player.status_flags += PlayerFlags_OnFoot;
             world.write_model(@player);
         }
 
-        fn move_spaceship(ref self: ContractState, spaceship_id: u128, position: Vec3, direction: Vec3, p_speed: u64) {
-            assert(p_speed.into() <= FP_UNIT, 'Speed too large (under 1)');
+        fn ship_move(ref self: ContractState, spaceship_id: u128, destination: Vec3, p_hyperspeed: bool) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
 
-            assert((ship.status_flags & 1) != 0, 'Ship not spawned');
-            assert((ship.status_flags & 4) != 0, 'Ship not being driven by player');
-            
-            // Check that the direction vector is normalized
-            // Using fixed point arithmetic with a small epsilon for floating point comparison
-            let len2 = vec3_fp40_len_sq(direction);
-            assert(len2 >= FP_UNIT - FP_LEN_SQ_EPSION && len2 <= FP_UNIT + FP_LEN_SQ_EPSION, 'Direction not normalized');
-            
+            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'Ship not spawned');
+            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'Ship not being driven by player');
+
             // Get current position from model
             let mut ship_pos_model : ShipPosition = world.read_model(spaceship_id);
-            if (ship_pos_model.speed > 0) {
-
-                let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
-                if ((ship.status_flags & 8) != 0) {
-                    speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
-                };
-                let speed = ship_pos_model.speed * speed_mode;
-                let model_pos = current_pos(ship_pos_model.pos, ship_pos_model.dir, ship_pos_model.last_motion, speed.into());
-                // Check that the provided position doesn't differ too much from the current position
-                let ship_dist2 = vec3_fp40_dist_sq(position, model_pos);
-                let max_distance_squared: i128 = 1000 * FP_UNIT; // Maximum allowed squared distance
-                assert(ship_dist2 <= max_distance_squared, 'Position change too large');
+            let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
+            if (p_hyperspeed) {
+                assert(ship.reference_body == DEFAULT_REFERENCE_BODY_ID, 'Hyperspeed not possible');
+                speed_mode = SHIP_HYPER_SPEED.try_into().unwrap();
             };
+            let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
+
+            // calculate new dir
+            let dif : Vec3 = vec3_sub(destination, ship_pos);
+            let len = vec3_fp40_len(dif);
+            let dir = vec3_fp40_div_scalar(dif, len);
             
             // Update ship position model
             let new_ship_pos = ShipPosition {
                 ship: spaceship_id,
-                pos: position,
-                dir: direction,
+                pos: ship_pos,
+                dir: dir,
+                dest: destination,
                 last_motion: get_block_timestamp().into(),
-                speed: p_speed,
+                hyperspeed: p_hyperspeed,
             };
             world.write_model(@new_ship_pos);
         }
 
-        fn ship_switch_reference_body(ref self: ContractState, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3, speed: u64) {
+        fn ship_switch_reference_body(ref self: ContractState, spaceship_id: u128, reference_body: u128, position: Vec3, direction: Vec3) {
 
             let mut world = self.world_default();
             let player_id = get_caller_address();
 
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
 
-            assert((ship.status_flags & 1) != 0, 'Ship not spawned');
-            assert((ship.status_flags & 4) != 0, 'Ship not being driven by player');
+            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'Ship not spawned');
+            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'Ship not being driven by player');
 
             // Check that the direction vector is normalized
             // Using fixed point arithmetic with a small epsilon for floating point comparison
@@ -210,9 +210,12 @@ pub mod GameActions {
             ship.reference_body = reference_body;
             world.write_model(@ship);
 
+            // TODO new position not checked
+
             let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             ship_pos.pos = position;
-            ship_pos.speed = speed;
+            ship_pos.dest = position;
+            ship_pos.hyperspeed = false;
             ship_pos.dir = direction;
 
             world.write_model(@ship_pos);
@@ -224,11 +227,11 @@ pub mod GameActions {
             let player_id = get_caller_address();
 
             let player : Player = world.read_model(player_id);
-            assert((player.status_flags & 1) != 0, 'Player is not walking');
+            assert((player.status_flags & PlayerFlags_OnFoot) != 0, 'Player is not walking');
 
             // Get current position from model
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            let model_pos = current_pos(player_pos_model.pos, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
+            let model_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
             // calculate new dir
             let dif : Vec3 = vec3_sub(dst, model_pos);
@@ -242,18 +245,17 @@ pub mod GameActions {
                 dir: dir,
                 dest: dst,
                 last_motion: get_block_timestamp().into(),
-                speed: 0,
             };
             world.write_model(@new_player_pos);
         }
 
-        fn collect_item(ref self: ContractState, player_id: u128, collectable_type: u16, collectable_index: u8) {
+        fn item_collect(ref self: ContractState, player_id: u128, collectable_type: u16, collectable_index: u8) {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let player : Player = world.read_model(player_id);
             let planet : Planet = world.read_model(player.reference_body);
             let player_pos_model : PlayerPosition = world.read_model(player_id);
-            let player_pos = player_pos_model.pos;
+            let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
 
             let area_x = player_pos.x / (AREA_SIZE * FP_UNIT).into();
             let area_y = player_pos.y / (AREA_SIZE * FP_UNIT).into();
