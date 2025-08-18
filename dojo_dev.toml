@@ -1,0 +1,22 @@
+[world]
+name = "Untitled Planets"
+description = "Untitled planets test contracts."
+cover_uri = "file://assets/cover.png"
+icon_uri = "file://assets/icon.png"
+website = "https://github.com/Untitled-Planets"
+seed = "utp_dojo"
+
+[world.socials]
+
+[namespace]
+default = "utp_dojo"
+
+[env]
+rpc_url = "https://api.cartridge.gg/x/utp-dojo2/katana"
+# Default account for katana with seed = 0
+account_address = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec"
+private_key = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912"
+# world_address = "0x0277d2b8cdb36c6c8cabbf54b63a3fd8424e307f1c2e89849492bf1219cfc7ff"
+
+[writers]
+"utp_dojo" = ["utp_dojo-GameActions"]

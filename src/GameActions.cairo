@@ -43,12 +43,16 @@ pub mod GameActions {
     const SHIP_SPEED: i128 = 100 * FP_UNIT;
     const SHIP_HYPER_SPEED: i128 = 1000 * FP_UNIT;
 
-    const ShipFlags_Spawned: u8 = 1;
-    const ShipFlags_Landed: u8 = 2;
-    const ShipFlags_Occupied: u8 = 4;
+    pub mod ShipFlags {
+        pub const Spawned: u8 = 1;
+        pub const Landed: u8 = 2;
+        pub const Occupied: u8 = 4;
+    }
 
-    const PlayerFlags_OnFoot: u8 = 1;
-    const PlayerFlags_OnShip: u8 = 2;
+    pub mod PlayerFlags {
+        pub const OnFoot: u8 = 1;
+        pub const OnShip: u8 = 2;
+    }
 
     #[abi(embed_v0)]
     impl GameActionsImpl of IGameActions<ContractState> {
@@ -60,7 +64,7 @@ pub mod GameActions {
             let mut ship : Spaceship = world.read_model(spaceship_id);
 
             assert(ship.owner == player_id, 'NotOwner');
-            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipNotEmpty');
+            assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
 
             let player_pos_model : PlayerPosition = world.read_model(player_id);
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
@@ -68,11 +72,11 @@ pub mod GameActions {
             let distance_squared = vec3_fp40_dist_sq(spawn_pos, player_pos);
             assert(distance_squared <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
-            if ((ship.status_flags & ShipFlags_Landed) == 0) {
-                ship.status_flags += ShipFlags_Landed;
+            if ((ship.status_flags & ShipFlags::Landed) == 0) {
+                ship.status_flags += ShipFlags::Landed;
             };
-            if ((ship.status_flags & ShipFlags_Spawned) == 0) {
-                ship.status_flags += ShipFlags_Spawned;
+            if ((ship.status_flags & ShipFlags::Spawned) == 0) {
+                ship.status_flags += ShipFlags::Spawned;
             };
 
             ship.reference_body = player.reference_body;
@@ -91,12 +95,12 @@ pub mod GameActions {
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model(spaceship_id);
             assert(ship.owner == player_id, 'NotOwner');
-            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'AlreadyDeSpawned');
-            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipNotEmpty');
+            assert((ship.status_flags & ShipFlags::Spawned) != 0, 'AlreadyDeSpawned');
+            assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
 
             // Remove ship position model
             //world.delete_model::<ShipPosition>(spaceship_id);
-            ship.status_flags -= ShipFlags_Spawned;
+            ship.status_flags -= ShipFlags::Spawned;
             world.write_model(@ship);
         }
 
@@ -105,13 +109,13 @@ pub mod GameActions {
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
             
-            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'ShipNotSpawned');
-            //assert((ship.status_flags & ShipFlags_Landed) != 0, 'ShipNotLanded');
-            assert((ship.status_flags & ShipFlags_Occupied) == 0, 'ShipAlreadyOccupied');
+            assert((ship.status_flags & ShipFlags::Spawned) != 0, 'ShipNotSpawned');
+            //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
+            assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipAlreadyOccupied');
 
             let mut player : Player = world.read_model(player_id);
-            assert((player.status_flags & PlayerFlags_OnFoot) != 0, 'PlayerNotWalking');
-            assert((player.status_flags & PlayerFlags_OnShip) == 0, 'PlayerAlreadyOnSpaceship');
+            assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'PlayerNotWalking');
+            assert((player.status_flags & PlayerFlags::OnShip) == 0, 'PlayerAlreadyOnSpaceship');
 
             // check ship position agains player position
             let ship_pos : ShipPosition = world.read_model(spaceship_id);
@@ -121,11 +125,11 @@ pub mod GameActions {
             let dist2 = vec3_fp40_dist_sq(player_pos, ship_pos.pos);
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
-            ship.status_flags += ShipFlags_Occupied;
+            ship.status_flags += ShipFlags::Occupied;
             world.write_model(@ship);
 
-            player.status_flags -= PlayerFlags_OnFoot;
-            player.status_flags += PlayerFlags_OnShip;
+            player.status_flags -= PlayerFlags::OnFoot;
+            player.status_flags += PlayerFlags::OnShip;
             world.write_model(@player);
         }
 
@@ -133,8 +137,8 @@ pub mod GameActions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
-            //assert((ship.status_flags & ShipFlags_Landed) != 0, 'ShipNotLanded');
-            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'ShipNotOccupied');
+            //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
+            assert((ship.status_flags & ShipFlags::Occupied) != 0, 'ShipNotOccupied');
             // Get ship position to check last motion time
             let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             //assert(ship_pos.speed > 0, 'ShipMoving');
@@ -142,19 +146,19 @@ pub mod GameActions {
             assert(dist2 <= MAX_SPAWN_DISTANCE_SQUARED, 'TooFar');
 
             let mut player : Player = world.read_model(player_id);
-            assert((player.status_flags & PlayerFlags_OnFoot) == 0, 'PlayerWalking');
-            assert((player.status_flags & PlayerFlags_OnShip) != 0, 'PlayerNotOnSpaceship');
+            assert((player.status_flags & PlayerFlags::OnFoot) == 0, 'PlayerWalking');
+            assert((player.status_flags & PlayerFlags::OnShip) != 0, 'PlayerNotOnSpaceship');
 
             let mut player_pos : PlayerPosition = world.read_model(player_id);
             player_pos.pos = pos;
             player_pos.dest = pos;
             world.write_model(@player_pos);
 
-            ship.status_flags -= ShipFlags_Occupied;
+            ship.status_flags -= ShipFlags::Occupied;
             world.write_model(@ship);
 
-            player.status_flags -= PlayerFlags_OnShip;
-            player.status_flags += PlayerFlags_OnFoot;
+            player.status_flags -= PlayerFlags::OnShip;
+            player.status_flags += PlayerFlags::OnFoot;
             world.write_model(@player);
         }
 
@@ -163,8 +167,8 @@ pub mod GameActions {
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
 
-            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'Ship not spawned');
-            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'Ship not being driven by player');
+            assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
+            assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
             // Get current position from model
             let mut ship_pos_model : ShipPosition = world.read_model(spaceship_id);
@@ -199,8 +203,8 @@ pub mod GameActions {
 
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
 
-            assert((ship.status_flags & ShipFlags_Spawned) != 0, 'Ship not spawned');
-            assert((ship.status_flags & ShipFlags_Occupied) != 0, 'Ship not being driven by player');
+            assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
+            assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
             // Check that the direction vector is normalized
             // Using fixed point arithmetic with a small epsilon for floating point comparison
@@ -226,8 +230,13 @@ pub mod GameActions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
 
-            let player : Player = world.read_model(player_id);
-            assert((player.status_flags & PlayerFlags_OnFoot) != 0, 'Player is not walking');
+            let mut player : Player = world.read_model(player_id);
+            if (player.status_flags == 0) { // 1st spawn
+
+                player.status_flags = PlayerFlags::OnFoot;
+                world.write_model(@player);
+            }
+            assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'Player is not walking');
 
             // Get current position from model
             let player_pos_model : PlayerPosition = world.read_model(player_id);
