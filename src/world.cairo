@@ -48,11 +48,12 @@ pub fn abs_value(v: i128) -> u128 {
 
 pub fn fp40_div(a: i128, b: i128) -> i128 {
 
-    let a_abs256 = abs_value(a) * 2_u128.pow(FP_UNIT_BITS.into());
-    let b_abs = abs_value(b);
+    let a_abs256: u256 = (abs_value(a) * 2_u128.pow(FP_UNIT_BITS.into())).into();
+    let b_abs: u256 = (abs_value(b)).into();
 
     let abs_ret = a_abs256 / b_abs;
-    let ret : i128 = abs_ret.try_into().unwrap();
+    let uret : u128 = abs_ret.try_into().unwrap(); 
+    let ret : i128 = uret.try_into().unwrap();
 
     if ( (a < 0) != (b < 0) ) {
         return ret * -1;

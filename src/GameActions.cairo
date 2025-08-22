@@ -245,7 +245,10 @@ pub mod GameActions {
             // calculate new dir
             let dif : Vec3 = vec3_sub(dst, model_pos);
             let len = vec3_fp40_len(dif);
-            let dir = vec3_fp40_div_scalar(dif, len);
+            let dir = player_pos_model.dir;
+            if (len > 0) {
+                vec3_fp40_div_scalar(dif, len);
+            };
 
             // Update player position model
             let new_player_pos = PlayerPosition {
