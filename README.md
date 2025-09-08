@@ -1,72 +1,34 @@
-# Dojo Game Contract
+# UTP Dojo contracts
 
 This project implements a 3D world game on Starknet using Dojo, with players, spaceships, planets, and procedurally generated collectables.
 
-## 🧰 Requirements
+## Running Locally
 
-- [Scarb](https://docs.swmansion.com/scarb/)
-- [Dojo CLI (sozo)](https://book.dojoengine.org/)
-- [Katana](https://book.dojoengine.org/tools/katana/)
-
-Install all tools:
-```bash
-curl -L https://install.dojoengine.org | bash
-````
-
-## 🚀 Getting Started
-
-### 0. Install Dependencies (1.7.0-alpha.1)
-From the installation guide at https://book.dojoengine.org/getting-started/installation/ 
+#### Terminal one (Make sure this is running)
 
 ```bash
-asdf plugin add katana https://github.com/dojoengine/asdf-katana.git
-asdf plugin add torii https://github.com/dojoengine/asdf-torii.git
-asdf plugin add sozo https://github.com/dojoengine/asdf-sozo.git
-
-asdf install scarb nightly-2025-05-08
+# Run Katana
+katana --dev --dev.no-fee
 ```
 
-Create a `.tools-versions` file containing the follwing:
-```bash
-scarb nightly-2025-05-08
-sozo 1.7.0-alpha.1
-katana 1.7.0-alpha.3
-torii 1.7.0-alpha.3
-```
-
-### 1. Start Local Devnet
+#### Terminal two
 
 ```bash
-katana
+# Build the example
+sozo build
+
+# Inspect the world
+sozo inspect
+
+# Migrate the example
+sozo migrate
+
+# Start Torii
+# Replace <WORLD_ADDRESS> with the address of the deployed world from the previous step
+torii --world <WORLD_ADDRESS> --http.cors_origins "*"
 ```
 
-### 2. Build Contract
+The URLs for katana and torii will be in the deployment output. The contract and world address will be in the output of `sozo inspect`.
 
-```bash
-./scripts/build.sh
-```
-
-### 3. Deploy World + Systems
-
-```bash
-./scripts/deploy.sh
-```
-
-## 🗂 Project Structure
-
-* `src/components.cairo` – Position and Direction components
-* `src/models.cairo` – Models for players, spaceships, planets
-* `src/GameActions.cairo` – Action implementations
-* `src/IGameActions.cairo` – ABI interface
-* `src/world.cairo` – World model logic
-
-## ✨ Features
-
-* Player and spaceship movement in 3D
-* Planets with gravity radius and seeds
-* Reference body switching
-* Procedural collectable generation per area
-* Inventory and item pickup
-
-## For more information about 1.7.0-alpha.1 migration, visit https://book.dojoengine.org/migration/1.7.0-alpha.1/
+Check the `dojo_dev.toml` file for the correct values, this is used by `sozo migrate` and `sozo execute` to deploy and test the contracts.
 
