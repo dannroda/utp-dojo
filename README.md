@@ -1,52 +1,34 @@
-# Dojo Game Contract
+# UTP Dojo contracts
 
 This project implements a 3D world game on Starknet using Dojo, with players, spaceships, planets, and procedurally generated collectables.
 
-## 🧰 Requirements
+## Running Locally
 
-- [Scarb](https://docs.swmansion.com/scarb/)
-- [Dojo CLI (sozo)](https://book.dojoengine.org/)
-- [Katana](https://book.dojoengine.org/tools/katana/)
-
-Install all tools:
-```bash
-curl -L https://install.dojoengine.org | bash
-````
-
-## 🚀 Getting Started
-
-### 1. Start Local Devnet
+#### Terminal one (Make sure this is running)
 
 ```bash
-katana
+# Run Katana
+katana --dev --dev.no-fee
 ```
 
-### 2. Build Contract
+#### Terminal two
 
 ```bash
-./scripts/build.sh
+# Build the example
+sozo build
+
+# Inspect the world
+sozo inspect
+
+# Migrate the example
+sozo migrate
+
+# Start Torii
+# Replace <WORLD_ADDRESS> with the address of the deployed world from the previous step
+torii --world <WORLD_ADDRESS> --http.cors_origins "*"
 ```
 
-### 3. Deploy World + Systems
+The URLs for katana and torii will be in the deployment output. The contract and world address will be in the output of `sozo inspect`.
 
-```bash
-./scripts/deploy.sh
-```
-
-## 🗂 Project Structure
-
-* `src/components.cairo` – Position and Direction components
-* `src/models.cairo` – Models for players, spaceships, planets
-* `src/GameActions.cairo` – Action implementations
-* `src/IGameActions.cairo` – ABI interface
-* `src/world.cairo` – World model logic
-
-## ✨ Features
-
-* Player and spaceship movement in 3D
-* Planets with gravity radius and seeds
-* Reference body switching
-* Procedural collectable generation per area
-* Inventory and item pickup
-
+Check the `dojo_dev.toml` file for the correct values, this is used by `sozo migrate` and `sozo execute` to deploy and test the contracts.
 

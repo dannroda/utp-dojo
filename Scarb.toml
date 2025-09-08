@@ -14,6 +14,7 @@ dojo = { git = "https://github.com/dojoengine/dojo", tag = "v1.6.2" }
 
 [[target.starknet-contract]]
 build-external-contracts = ["dojo::world::world_contract::world"]
+allowed-libfuncs-list.name = "experimental"
 
 [dev-dependencies]
 cairo_test = "=2.10.1"
