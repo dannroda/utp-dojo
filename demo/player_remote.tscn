@@ -1,0 +1,47 @@
+[gd_scene load_steps=7 format=3 uid="uid://s4bserginpwj"]
+
+[ext_resource type="Script" path="res://player_remote.gd" id="1_8r8ct"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ux10k"]
+transparency = 1
+albedo_color = Color(1, 0.235294, 0.12549, 0.356863)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6lim0"]
+material = SubResource("StandardMaterial3D_ux10k")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_18hyh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_3ri6v"]
+transparency = 1
+albedo_color = Color(1, 0.235294, 0.12549, 0.356863)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_v8pv1"]
+material = SubResource("StandardMaterial3D_3ri6v")
+
+[node name="player_remote" type="CharacterBody3D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_8r8ct")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12328, 0)
+mesh = SubResource("CapsuleMesh_6lim0")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12774, 0)
+shape = SubResource("CapsuleShape3D_18hyh")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.1
+target_desired_distance = 0.1
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(-2.92778e-08, -2.07389e-08, -0.586846, -0.669799, -1.77636e-15, 2.56518e-08, 0, 0.47445, -2.56518e-08, 0.00455783, 1.404, -0.493403)
+mesh = SubResource("CapsuleMesh_v8pv1")
+
+[node name="id_label" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, 1.22465e-16, 0, 1, 0, -1.22465e-16, 0, -1, 0, 2.38, 0)
+pixel_size = 0.0015
+billboard = 1
+fixed_size = true
+text = "Player Id"

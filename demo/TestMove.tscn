@@ -1,0 +1,83 @@
+[gd_scene load_steps=9 format=3 uid="uid://dqgiyvlaqa17y"]
+
+[ext_resource type="Script" path="res://test_move.gd" id="1_at24u"]
+[ext_resource type="PackedScene" uid="uid://d4hgkpvhcckxo" path="res://player_local.tscn" id="1_sy2ib"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_hif2c"]
+vertices = PackedVector3Array(9.55611, 0.0271594, -0.112995, 9.55611, 0.0271594, -10.113, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, -9.44389, 0.0271594, 10.137, 0.0561085, 0.0271594, 10.137, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, 0.0561085, 0.0271594, 10.137, 9.55611, 0.0271594, 10.137, 9.55611, 0.0271594, -0.112995)
+polygons = [PackedInt32Array(1, 0, 2), PackedInt32Array(2, 0, 3), PackedInt32Array(3, 0, 5), PackedInt32Array(3, 5, 4), PackedInt32Array(8, 7, 6), PackedInt32Array(11, 10, 9)]
+cell_height = 0.01
+
+[sub_resource type="BoxMesh" id="BoxMesh_q8a4c"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_vvx0g"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_gemmb"]
+
+[sub_resource type="Sky" id="Sky_6xbsx"]
+sky_material = SubResource("ProceduralSkyMaterial_gemmb")
+
+[sub_resource type="Environment" id="Environment_re82b"]
+background_mode = 2
+background_energy_multiplier = 2.24
+sky = SubResource("Sky_6xbsx")
+
+[node name="world" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.95152, 0)
+script = ExtResource("1_at24u")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_hif2c")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D"]
+transform = Transform3D(19.8878, 0, 0, 0, 0.0256813, 0, 0, 0, 21.226, 0, 0, 0)
+mesh = SubResource("BoxMesh_q8a4c")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/MeshInstance3D"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/MeshInstance3D/StaticBody3D"]
+shape = SubResource("BoxShape3D_vvx0g")
+
+[node name="player_local" parent="." instance=ExtResource("1_sy2ib")]
+
+[node name="Camera3D" type="Camera3D" parent="." groups=["Camera"]]
+transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 7.92028, 13.1512)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_re82b")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.505371, 0.632881, -0.586567, -5.55112e-17, 0.679761, 0.733433, 0.862902, 0.370656, -0.343532, 0, 0, 0)
+visible = false
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ship_spawn" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 970.0
+offset_top = 42.0
+offset_right = 1095.0
+offset_bottom = 87.0
+text = "Spawn Ship
+"
+
+[node name="ship_despawn" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 970.0
+offset_top = 94.0
+offset_right = 1095.0
+offset_bottom = 139.0
+text = "Despawn Ship"
+
+[node name="ship_leave" type="Button" parent="UI"]
+layout_mode = 0
+offset_left = 970.0
+offset_top = 147.0
+offset_right = 1095.0
+offset_bottom = 192.0
+text = "Leave Ship
+"

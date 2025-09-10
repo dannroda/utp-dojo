@@ -1,0 +1,75 @@
+[gd_scene load_steps=4 format=3 uid="uid://cts3kcdpdvjv3"]
+
+[ext_resource type="PackedScene" uid="uid://b5vmo8llucetx" path="res://connection/status_indicator.tscn" id="1_66dw4"]
+[ext_resource type="Script" path="res://connection/status_panel.gd" id="1_82686"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gm8ps"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.2484, 0.2484, 0.2484, 1)
+
+[node name="CanvasLayer" type="CanvasLayer"]
+layer = 10
+script = ExtResource("1_82686")
+
+[node name="PanelStatus" type="PanelContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -274.0
+offset_top = -31.0
+offset_right = 274.0
+grow_horizontal = 2
+grow_vertical = 0
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_gm8ps")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelStatus"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="PanelStatus/HBoxContainer"]
+layout_mode = 2
+text = "Status:"
+
+[node name="ClientStatus" parent="PanelStatus/HBoxContainer" instance=ExtResource("1_66dw4")]
+unique_name_in_owner = true
+layout_mode = 2
+stat_name = "client"
+type_name = "Client"
+
+[node name="ControllerAccountStatus" parent="PanelStatus/HBoxContainer" instance=ExtResource("1_66dw4")]
+unique_name_in_owner = true
+layout_mode = 2
+stat_name = "controller"
+type_name = "Controller"
+
+[node name="ProviderStatus" parent="PanelStatus/HBoxContainer" instance=ExtResource("1_66dw4")]
+unique_name_in_owner = true
+layout_mode = 2
+stat_name = "provider"
+type_name = "Provider"
+
+[node name="VSeparator" type="VSeparator" parent="PanelStatus/HBoxContainer"]
+layout_mode = 2
+
+[node name="EventUpdatesStatus" parent="PanelStatus/HBoxContainer" instance=ExtResource("1_66dw4")]
+unique_name_in_owner = true
+layout_mode = 2
+stat_name = "events"
+type_name = "EventUpdates"
+
+[node name="EntityUpdatesStatus" parent="PanelStatus/HBoxContainer" instance=ExtResource("1_66dw4")]
+unique_name_in_owner = true
+layout_mode = 2
+stat_name = "entities"
+type_name = "EntityUpdates"
+
+[node name="Button" type="Button" parent="PanelStatus/HBoxContainer"]
+layout_mode = 2
+text = "Connect"
