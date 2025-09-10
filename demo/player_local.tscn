@@ -1,0 +1,45 @@
+[gd_scene load_steps=7 format=3 uid="uid://d4hgkpvhcckxo"]
+
+[ext_resource type="Script" path="res://ClickToMove.gd" id="1_ghh4o"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iv7mo"]
+albedo_color = Color(0.0953004, 1, 0.194411, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_6lim0"]
+material = SubResource("StandardMaterial3D_iv7mo")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_18hyh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1qqo5"]
+albedo_color = Color(0.0953004, 1, 0.194411, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_v8pv1"]
+material = SubResource("StandardMaterial3D_1qqo5")
+
+[node name="player_local" type="CharacterBody3D"]
+script = ExtResource("1_ghh4o")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12328, 0)
+mesh = SubResource("CapsuleMesh_6lim0")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12774, 0)
+shape = SubResource("CapsuleShape3D_18hyh")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.1
+target_desired_distance = 0.1
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(-2.92778e-08, -2.07389e-08, -0.586846, -0.669799, -1.77636e-15, 2.56518e-08, 0, 0.47445, -2.56518e-08, 0.00455783, 1.404, -0.493403)
+mesh = SubResource("CapsuleMesh_v8pv1")
+
+[node name="id_label" type="Label3D" parent="."]
+transform = Transform3D(-1, 0, 1.22465e-16, 0, 1, 0, -1.22465e-16, 0, -1, 0, 2.38, 0)
+pixel_size = 0.0015
+billboard = 1
+fixed_size = true
+modulate = Color(1, 0.984314, 1, 0.631373)
+outline_modulate = Color(0, 0, 0, 0.709804)
+text = "Player ID"

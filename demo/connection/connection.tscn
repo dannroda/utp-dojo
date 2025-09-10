@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3 uid="uid://b75yggsnay1mo"]
+
+[ext_resource type="Script" path="res://connection/connection.gd" id="1_c7jwa"]
+
+[sub_resource type="DojoQuery" id="DojoQuery_erpqw"]
+
+[sub_resource type="EntitySubscription" id="EntitySubscription_erpqw"]
+name = "Entity"
+
+[sub_resource type="MessageSubscription" id="MessageSubscription_erpqw"]
+name = "Message"
+
+[sub_resource type="DojoPolicy" id="DojoPolicy_2kgrw"]
+method = "GameActions-player_move"
+
+[sub_resource type="DojoPolicies" id="DojoPolicies_b2hkl"]
+name = "GameActions"
+contract = "0x0402b2c97cf0bd5b2fa1733504e039d550e7fd2f43e0329fe22f0eabd99121d5"
+policies = Array[DojoPolicy]([SubResource("DojoPolicy_2kgrw")])
+
+[node name="Connection" type="Node"]
+script = ExtResource("1_c7jwa")
+debug_use_account = true
+query = SubResource("DojoQuery_erpqw")
+entity_sub = SubResource("EntitySubscription_erpqw")
+message_sub = SubResource("MessageSubscription_erpqw")
+
+[node name="ToriiClient" type="ToriiClient" parent="."]
+torii_url = "http://127.0.0.1:8080"
+world_address = "0x0277d2b8cdb36c6c8cabbf54b63a3fd8424e307f1c2e89849492bf1219cfc7ff"
+
+[node name="ControllerAccount" type="ControllerAccount" parent="."]
+chain_id = "WP_UTP_DOJO2"
+policies = SubResource("DojoPolicies_b2hkl")
+
+[node name="Account" type="Account" parent="."]
+
+[connection signal="client_connected" from="ToriiClient" to="." method="_on_torii_client_client_connected"]
+[connection signal="client_disconnected" from="ToriiClient" to="." method="_on_torii_client_client_disconnected"]
+[connection signal="subscription_created" from="ToriiClient" to="." method="_on_torii_client_subscription_created"]
+[connection signal="controller_connected" from="ControllerAccount" to="." method="_on_controller_account_controller_connected"]
+[connection signal="controller_disconnected" from="ControllerAccount" to="." method="_on_controller_account_controller_disconnected"]
+[connection signal="provider_status_updated" from="ControllerAccount" to="." method="_on_controller_account_provider_status_updated"]
