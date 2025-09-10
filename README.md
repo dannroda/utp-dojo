@@ -2,6 +2,10 @@
 
 This project implements a 3D world game on Starknet using Dojo, with players, spaceships, planets, and procedurally generated collectables.
 
+## Toolchain
+
+Install the toolchain using this guide [Dojo getting started](https://dojoengine.org/installation)
+
 ## Running Locally
 
 #### Terminal one (Make sure this is running)
