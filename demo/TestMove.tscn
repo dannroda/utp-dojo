@@ -1,7 +1,6 @@
-[gd_scene load_steps=9 format=3 uid="uid://dqgiyvlaqa17y"]
+[gd_scene load_steps=8 format=3 uid="uid://dqgiyvlaqa17y"]
 
 [ext_resource type="Script" path="res://test_move.gd" id="1_at24u"]
-[ext_resource type="PackedScene" uid="uid://d4hgkpvhcckxo" path="res://player_local.tscn" id="1_sy2ib"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_hif2c"]
 vertices = PackedVector3Array(9.55611, 0.0271594, -0.112995, 9.55611, 0.0271594, -10.113, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, -9.44389, 0.0271594, 10.137, 0.0561085, 0.0271594, 10.137, 0.0561085, 0.0271594, -10.113, -9.44389, 0.0271594, -10.113, -9.44389, 0.0271594, -0.112995, 0.0561085, 0.0271594, 10.137, 9.55611, 0.0271594, 10.137, 9.55611, 0.0271594, -0.112995)
@@ -37,8 +36,6 @@ mesh = SubResource("BoxMesh_q8a4c")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/MeshInstance3D/StaticBody3D"]
 shape = SubResource("BoxShape3D_vvx0g")
-
-[node name="player_local" parent="." instance=ExtResource("1_sy2ib")]
 
 [node name="Camera3D" type="Camera3D" parent="." groups=["Camera"]]
 transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, 7.92028, 13.1512)

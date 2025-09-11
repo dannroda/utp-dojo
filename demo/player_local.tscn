@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://d4hgkpvhcckxo"]
 
-[ext_resource type="Script" path="res://ClickToMove.gd" id="1_ghh4o"]
+[ext_resource type="Script" path="res://player_local.gd" id="1_q8p4o"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iv7mo"]
 albedo_color = Color(0.0953004, 1, 0.194411, 1)
@@ -17,7 +17,7 @@ albedo_color = Color(0.0953004, 1, 0.194411, 1)
 material = SubResource("StandardMaterial3D_1qqo5")
 
 [node name="player_local" type="CharacterBody3D"]
-script = ExtResource("1_ghh4o")
+script = ExtResource("1_q8p4o")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.12328, 0)
