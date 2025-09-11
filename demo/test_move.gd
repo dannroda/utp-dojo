@@ -1,16 +1,29 @@
 extends Node3D
 
+var connection
+
 var players = {}
 var ships = {}
 
 var player_local
 var ship_local
 
+enum InputModes {
+	PlayerMove,
+	ShipSpawn,
+	ShipMove,
+	ShipLeave,
+}
+
+var input_mode
+
 func player_updated(id, status):
 	if !(id in players):
 		new_player(id)
 		
 	players[id].model_status = status
+	if id == connection.get_local_id():
+		player_local.model_status = status
 
 func new_player(id):
 	if !(id in players):
@@ -20,6 +33,15 @@ func new_player(id):
 		printt("new player already instanced? ", id)
 
 	add_child(players[id])
+	players[id].set_player_id(id)
+	
+	if player_local != null:
+		return
+	if id == connection.get_local_id():
+		player_local = preload("player_local.tscn").instantiate()
+		add_child(player_local)
+		player_local.set_player_id(id)
+		player_local.world = self
 	
 func player_movement(id, src, dst):
 	
@@ -28,6 +50,9 @@ func player_movement(id, src, dst):
 		printt("player move not instanced?", id)
 	
 	players[id].move_event(src, dst)
+	
+	if id == connection.get_local_id():
+		player_local.move_remote(src, dst)
 
 func _input(event):
 	if !event.is_action("move") || !event.is_pressed():
@@ -46,8 +71,24 @@ func _input(event):
 	if !("position" in result):
 		return
 
-	player_local.move_local(result.position)
+	position_event(result.position)
+
+func set_input_mode(p_mode):
+	input_mode = p_mode
+
+func position_event(pos):
+	
+	if input_mode == InputModes.PlayerMove:
+		player_local.move_local(pos)
+	elif input_mode == InputModes.ShipMove:
+		pass
+	elif input_mode == InputModes.ShipSpawn:
+		pass
+	elif input_mode == InputModes.ShipLeave:
+		pass
+	
 
 func _ready():
-	get_node("/root/Connection").world = self
-	player_local = get_node("player_local")
+	connection = get_node("/root/Connection")
+	connection.world = self
+	player_local

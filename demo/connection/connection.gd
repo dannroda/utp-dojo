@@ -85,7 +85,17 @@ func _get_entities():
 	printt("Entities:", data)
 	for e in data:
 		_update_entity(e)
-	
+
+func get_local_id():
+	if debug_use_account:
+		if !account.is_account_valid():
+			return null
+		return account.get_address()
+	else:
+		if !status["controller"]:
+			return null
+			
+		return controller_account.get_address()
 
 func _on_events(args:Dictionary) -> void:
 	printt("*** got event", args)
