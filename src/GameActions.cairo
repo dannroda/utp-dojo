@@ -17,6 +17,7 @@ pub trait IGameActions<T> {
 pub mod GameActions {
     use super::IGameActions;
     use crate::models::{Player, Spaceship, Planet, CollectableTracker, PlayerPosition, ShipPosition, Vec3, InventoryItem};
+    // We'll implement our own bitwise operations
     
     use dojo::world::world;
     use starknet::get_block_timestamp;
@@ -195,6 +196,8 @@ pub mod GameActions {
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'AlreadyDeSpawned');
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipNotEmpty');
 
+            // Remove ship position model
+            //world.delete_model::<ShipPosition>(spaceship_id);
             ship.status_flags -= ShipFlags::Spawned;
             world.write_model(@ship);
         }
@@ -205,12 +208,14 @@ pub mod GameActions {
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
             
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'ShipNotSpawned');
+            //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) == 0, 'ShipAlreadyOccupied');
 
             let mut player : Player = world.read_model(player_id);
             assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'PlayerNotWalking');
             assert((player.status_flags & PlayerFlags::OnShip) == 0, 'PlayerAlreadyOnSpaceship');
 
+            // check ship position agains player position
             let ship_pos : ShipPosition = world.read_model(spaceship_id);
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
             let player_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap()); 
@@ -230,7 +235,11 @@ pub mod GameActions {
             let mut world = self.world_default();
             let player_id = get_caller_address();
             let mut ship : Spaceship = world.read_model((spaceship_id, player_id));
+            //assert((ship.status_flags & ShipFlags::Landed) != 0, 'ShipNotLanded');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'ShipNotOccupied');
+            // Get ship position to check last motion time
+            //let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
+            //assert(ship_pos.speed > 0, 'ShipMoving');
             
             let ship_pos : ShipPosition = world.read_model(spaceship_id);
             let dist2 = vec3_fp40_dist_sq(ship_pos.pos, pos);
@@ -261,6 +270,7 @@ pub mod GameActions {
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
+            // Get current position from model
             let mut ship_pos_model : ShipPosition = world.read_model(spaceship_id);
             let mut speed_mode : u64 = SHIP_SPEED.try_into().unwrap();
             if (p_hyperspeed) {
@@ -269,10 +279,12 @@ pub mod GameActions {
             };
             let ship_pos = current_pos(ship_pos_model.pos, ship_pos_model.dest, ship_pos_model.dir, ship_pos_model.last_motion, speed_mode.into());
 
+            // calculate new dir
             let dif : Vec3 = vec3_sub(destination, ship_pos);
             let len = vec3_fp40_len(dif);
             let dir = vec3_fp40_div_scalar(dif, len);
             
+            // Update ship position model
             let new_ship_pos = ShipPosition {
                 ship: spaceship_id,
                 pos: ship_pos,
@@ -292,12 +304,15 @@ pub mod GameActions {
             assert((ship.status_flags & ShipFlags::Spawned) != 0, 'Ship not spawned');
             assert((ship.status_flags & ShipFlags::Occupied) != 0, 'Ship not being driven by player');
 
+            // Check that the direction vector is normalized
+            // Using fixed point arithmetic with a small epsilon for floating point comparison
             let len2 = vec3_fp40_len_sq(direction);
             assert(len2 >= FP_UNIT - FP_LEN_SQ_EPSION && len2 <= FP_UNIT + FP_LEN_SQ_EPSION, 'Direction not normalized');
 
             ship.reference_body = reference_body;
             world.write_model(@ship);
 
+            // TODO new position not checked
             let mut ship_pos : ShipPosition = world.read_model(spaceship_id);
             ship_pos.pos = position;
             ship_pos.dest = position;
@@ -308,28 +323,39 @@ pub mod GameActions {
         }
 
         fn player_move(ref self: ContractState, dst: Vec3) {
+            println!("-- player_move start");
             let mut world = self.world_default();
             let player_id = get_caller_address();
+            println!("Player {:?} move to {},{},{}", player_id, dst.x, dst.y, dst.z);
             let mut player : Player = world.read_model(player_id);
-            if (player.status_flags == 0) { 
+            if (player.status_flags == 0) { // 1st spawn
                 player.status_flags = PlayerFlags::OnFoot;
                 world.write_model(@player);
             }
             assert((player.status_flags & PlayerFlags::OnFoot) != 0, 'Player is not walking');
 
+            // Get current position from model
             let mut player_pos_model : PlayerPosition = world.read_model(player_id);
-            if (player_pos_model.last_motion == 0) { 
+            if (player_pos_model.last_motion == 0) { // 1st spawn
                 player_pos_model.last_motion = get_block_timestamp().into();
             }
+            println!("model dir is {},{},{}", player_pos_model.dir.x, player_pos_model.dir.y, player_pos_model.dir.z);
+            println!("model pos is {},{},{}", player_pos_model.pos.x, player_pos_model.pos.y, player_pos_model.pos.z);
+            println!("model dst is {},{},{}", player_pos_model.dest.x, player_pos_model.dest.y, player_pos_model.dest.z);
             let model_pos = current_pos(player_pos_model.pos, player_pos_model.dest, player_pos_model.dir, player_pos_model.last_motion, PLAYER_WALKING_SPEED.try_into().unwrap());
+            println!("current pos to {},{},{}", model_pos.x, model_pos.y, model_pos.z);
 
+            // calculate new dir
             let dif : Vec3 = vec3_sub(dst, model_pos);
+            println!("dif is {},{},{}", dif.x, dif.y, dif.z);
             let len = vec3_fp40_len(dif);
+            println!("len is {}", len);
             let mut dir = dif;
             if (len > 0) {
                 dir = vec3_fp40_div_scalar(dif, len);
             };
 
+            // Update player position model
             let new_player_pos = PlayerPosition {
                 player: player_id,
                 pos: model_pos,
@@ -338,6 +364,7 @@ pub mod GameActions {
                 last_motion: get_block_timestamp().into(),
             };
             world.write_model(@new_player_pos);
+            println!("-- player_move done");
         }
 
         fn item_collect(ref self: ContractState, player_id: u128, collectable_type: u16, collectable_index: u8) {
@@ -353,22 +380,27 @@ pub mod GameActions {
             let area_z = player_pos.z / (AREA_SIZE * FP_UNIT).into();
             let area_hash = area_x * 31 * 31 + area_y * 31 + area_z;
 
+            // Create a ByteArray from a string literal and then append values
             let mut count_seed = ByteArray { data: array![], pending_word: 0, pending_word_len: 0 };
+            // Convert values to bytes before appending
             count_seed.append_byte(planet.seed.try_into().unwrap());
             count_seed.append_byte(planet.epoc.try_into().unwrap());
             count_seed.append_byte(area_hash.try_into().unwrap());
             count_seed.append_byte(collectable_type.try_into().unwrap());
+            //let count_seed = planet.seed + planet.epoc + area_hash + collectable_type.into();
             
             let count_hash = core::sha256::compute_sha256_byte_array(@count_seed);
             let total_spawned = *count_hash.span().at(7) % MAX_SPAWN.into();
 
             assert(collectable_index.into() < total_spawned, 'InvalidIndex');
 
+            // Create a new ByteArray for position seed by copying the count_seed and adding the collectable_index
             let mut pos_seed = ByteArray { data: count_seed.data.clone(), pending_word: 0, pending_word_len: 0 };
             pos_seed.append_byte(collectable_index.into());
             let item_hash = core::sha256::compute_sha256_byte_array(@pos_seed);
 
-            let span = item_hash.span();
+            let span = item_hash.span(); // span of 32 bit elements
+            // Convert u32 to i128 using try_into().unwrap()
             let span_0_i128: i128 = (*span.at(0)).try_into().unwrap();
             let span_1_i128: i128 = (*span.at(1)).try_into().unwrap();
             let span_2_i128: i128 = (*span.at(2)).try_into().unwrap();
@@ -388,7 +420,18 @@ pub mod GameActions {
 
             let area_key: i128 = area_hash * 1000_i128 + collectable_type.into();
             
+            // Get existing tracker or create a new one
             let mut tracker : CollectableTracker = world.read_model(area_key);
+            // TODO: detect if key not found
+            //if (!tracker.is_some()) {
+            //   tracker = CollectableTracker {
+            //        id: area_key,
+            //        area: area_hash.into(),
+            //        collectable_type,
+            //        bitfield: 0,
+            //        epoc: 0,
+            //    };
+            //};
             
             let bitfield : u128 = if tracker.epoc == planet.epoc { tracker.bitfield } else { 0 };
             let bit_mask : u128 = 2_u128.pow(collectable_index.into());
@@ -396,24 +439,39 @@ pub mod GameActions {
             let is_already_collected = (bitfield & bit_mask) != 0;
             assert(!is_already_collected, 'AlreadyCollected');
 
+            // Bitwise OR implementation
             tracker.bitfield = bitfield | bit_mask;
             tracker.epoc = planet.epoc;
             world.write_model(@tracker);
 
-            let current_item : InventoryItem = world.read_model((player_id, collectable_type));
-            
-            let new_item = InventoryItem { 
-                player_id: player_id, 
-                item_type: collectable_type, 
-                count: current_item.count + 1, 
-            };
-            
-            world.write_model(@new_item);
+            // move to funtcion add_to_inventory
+            {
+                // Get the current inventory item or create a new one with count 0
+                let current_item : InventoryItem = world.read_model((player_id, collectable_type));
+                
+                // TODO: detect empty result
+                // {
+                //    Option::Some(item) => item,
+                //    None => InventoryItem { player_id: player_id, item_type: collectable_type, count: 0 },
+                //};
+                
+                // Increment the count
+                let new_item = InventoryItem { 
+                    player_id: player_id, 
+                    item_type: collectable_type, 
+                    count: current_item.count + 1, 
+                };
+                
+                // Save the updated inventory item
+                world.write_model(@new_item);
+            }
         }
     }
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
+        /// Use the default namespace "utp_dojo". This function is handy since the ByteArray
+        /// can't be const.
         fn world_default(self: @ContractState) -> dojo::world::WorldStorage {
             self.world(@"utp_dojo")
         }
